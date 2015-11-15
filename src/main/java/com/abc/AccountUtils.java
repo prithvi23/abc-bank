@@ -1,7 +1,5 @@
 package com.abc;
 
-import com.sun.tools.internal.jxc.ap.Const;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
