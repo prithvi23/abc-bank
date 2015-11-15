@@ -1,73 +1,88 @@
 package com.abc;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-public class Account {
+/**
+ * Customer's Bank Account
+ */
+public class Account extends ModelsBase implements IModelBase{
+    private final AccountType accountType;
+    /**
+     * Key is the id and value is the transactions in a day
+     */
+    private Map<Long,TransactionsInADay> dailyTransactions;
+    private final Date openingDate;
 
-    public static final int CHECKING = 0;
-    public static final int SAVINGS = 1;
-    public static final int MAXI_SAVINGS = 2;
-
-    private final int accountType;
-    public List<Transaction> transactions;
-
-    public Account(int accountType) {
+    public Account(AccountType accountType) {
         this.accountType = accountType;
-        this.transactions = new ArrayList<Transaction>();
+        this.dailyTransactions = new HashMap<Long,TransactionsInADay>();
+        this.openingDate = DateProvider.getInstance().now();
     }
 
-    public void deposit(double amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("amount must be greater than zero");
-        } else {
-            transactions.add(new Transaction(amount));
+    public List<TransactionsInADay> getTransactions() {
+        return Collections.unmodifiableList(new ArrayList<TransactionsInADay>(this.dailyTransactions.values()));
+    }
+
+    public Date getOpeningDate() {
+        return openingDate;
+    }
+
+    public AccountType getAccountType() {
+        return this.accountType;
+    }
+
+    /**
+     * Make a deposit
+     * @param amount
+     */
+    public boolean deposit(double amount){
+        if (amount > 0.0){
+            return getTodaysTransaction().deposit(amount);
         }
+        return false;
     }
 
-public void withdraw(double amount) {
-    if (amount <= 0) {
-        throw new IllegalArgumentException("amount must be greater than zero");
-    } else {
-        transactions.add(new Transaction(-amount));
-    }
-}
-
-    public double interestEarned() {
-        double amount = sumTransactions();
-        switch(accountType){
-            case SAVINGS:
-                if (amount <= 1000)
-                    return amount * 0.001;
-                else
-                    return 1 + (amount-1000) * 0.002;
-//            case SUPER_SAVINGS:
-//                if (amount <= 4000)
-//                    return 20;
-            case MAXI_SAVINGS:
-                if (amount <= 1000)
-                    return amount * 0.02;
-                if (amount <= 2000)
-                    return 20 + (amount-1000) * 0.05;
-                return 70 + (amount-2000) * 0.1;
-            default:
-                return amount * 0.001;
+    /**
+     * Withdraw some money
+     * @param amount
+     * @return
+     */
+    public boolean withdraw(double amount){
+        if (amount > 0.0 && this.getBalanceInfo().getBalance() >= amount){
+            return getTodaysTransaction().withdraw(amount);
         }
+        return false;
     }
 
-    public double sumTransactions() {
-       return checkIfTransactionsExist(true);
+    /**
+     * Get account balance info
+     * @return
+     */
+    public BalanceInfo getBalanceInfo(){
+        return getAccountUtils().getInterestEarned(this.openingDate,this.getTransactions(),this.accountType);
     }
 
-    private double checkIfTransactionsExist(boolean checkAll) {
-        double amount = 0.0;
-        for (Transaction t: transactions)
-            amount += t.amount;
-        return amount;
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder(Constants.NEW_LINE);
+        result.append(accountType.getDetailedDescription());
+        result.append(Constants.NEW_LINE);
+        result.append(Constants.OPENING_DATE);
+        result.append(Constants.TAB);
+        result.append(DateProvider.getInstance().getDateString(this.getOpeningDate()));
+        return result.toString();
     }
 
-    public int getAccountType() {
-        return accountType;
+    private TransactionsInADay getTodaysTransaction(){
+        TransactionsInADay transactionsInADay = getAccountUtils().getTodaysDailyTransaction(this.getTransactions());
+        if (!this.dailyTransactions.containsKey(transactionsInADay.getId())){
+            this.dailyTransactions.put(transactionsInADay.getId(),transactionsInADay);
+        }
+        return transactionsInADay;
     }
 
+    private AccountUtils getAccountUtils() {
+        return AccountUtils.getInstance();
+    }
 }

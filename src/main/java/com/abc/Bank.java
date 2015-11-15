@@ -1,46 +1,41 @@
 package com.abc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class Bank {
+/**
+ * The Bank object
+ */
+public class Bank  extends ModelsBase implements IModelBase{
+
     private List<Customer> customers;
 
     public Bank() {
         customers = new ArrayList<Customer>();
     }
 
-    public void addCustomer(Customer customer) {
+    public Customer addCustomer(String customerName) {
+        Customer customer = new Customer(customerName);
         customers.add(customer);
+        return customer;
     }
 
-    public String customerSummary() {
-        String summary = "Customer Summary";
-        for (Customer c : customers)
-            summary += "\n - " + c.getName() + " (" + format(c.getNumberOfAccounts(), "account") + ")";
-        return summary;
+    public List<Customer> getCustomers() {
+        return Collections.unmodifiableList(customers);
     }
 
-    //Make sure correct plural of word is created based on the number passed in:
-    //If number passed in is 1 just return the word otherwise add an 's' at the end
-    private String format(int number, String word) {
-        return number + " " + (number == 1 ? word : word + "s");
+    public String getCustomerSummary(){
+        return AccountUtils.getInstance().getCustomerAccountReport(this);
     }
 
-    public double totalInterestPaid() {
-        double total = 0;
-        for(Customer c: customers)
-            total += c.totalInterestEarned();
-        return total;
+    public Customer openAccount(String customerName, AccountType accountType){
+        Customer customer = addCustomer(customerName);
+        customer.openAccount(accountType);
+        return customer;
     }
 
-    public String getFirstCustomer() {
-        try {
-            customers = null;
-            return customers.get(0).getName();
-        } catch (Exception e){
-            e.printStackTrace();
-            return "Error";
-        }
+    public double getTotalInterestPaid(){
+        return AccountUtils.getInstance().getTotalInterestPaidBy(this);
     }
 }
